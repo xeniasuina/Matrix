@@ -1,20 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Matrices.Matrices;
 
 public class SquareMatrix : Matrix
 {
     private double _determinant;
+    private List<int> _linearlyDependentRows = new();
+    private List<int> _linearlyDependentColumns = new();
     
-    public double Determinant
-    {
-        get => _determinant;
-        init => _determinant = value;
-    }
+    public double Determinant => _determinant;
 
-    public SquareMatrix(int rowCount) : base(rowCount)
-    {
-    }
+    public SquareMatrix(int rowCount) : base(rowCount) { }
 
     public SquareMatrix(double[,] data) : base(data)
     {
@@ -26,6 +22,29 @@ public class SquareMatrix : Matrix
 
     public SquareMatrix(Matrix matrix) : this(matrix.MatrixData) { }
 
+    public void RemoveLinearlyDependentRowsAndColumns()
+    {
+        if (!(Math.Abs(_determinant) < 0.001))
+        {
+            return;
+        }
+
+        var res = new Matrix(_matrix);
+
+        foreach (var row in _linearlyDependentRows)
+        {
+            res.CreateMatrixWithoutRow(row);
+        }
+
+        foreach (var column in _linearlyDependentColumns)
+        {
+            res.CreateMatrixWithoutColumn(column);
+        }
+
+        _matrix = new double[res.RowCount, res.ColumnCount];
+        ProcessFunctionOverMatrix(this, (i, j) => _matrix[i, j] = res[i, j]);
+    }
+
     private double CalculateDeterminant()
     {
         var res = new Matrix(this);
@@ -35,18 +54,22 @@ public class SquareMatrix : Matrix
         for (var i = 0; i < _rowCount; i += 1)
         {
             var k = i;
-            for (int j = i + 1; j < _columnCount; j += 1)
+            for (var j = i + 1; j < _columnCount; j += 1)
             {
                 if (Math.Abs(res[j, i]) > Math.Abs(res[k, i]))
                 {
                     k = j;
                 }
             }
+            
             if (Math.Abs(res[k, i]) < eps)
             {
                 det = 0;
+                _linearlyDependentRows.Add(i);
+                _linearlyDependentColumns.Add(k);
                 break;
             }
+            
             SwapRows(ref res, i, k);
             if (i != k)
             {
@@ -58,6 +81,7 @@ public class SquareMatrix : Matrix
             {
                 res[i, j] /= res[i, i];
             }
+            
             for (var j = 0; j < _columnCount; j += 1)
             {
                 if (j != i && Math.Abs(this[j, i]) > eps)
