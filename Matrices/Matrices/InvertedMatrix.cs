@@ -1,40 +1,41 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Matrices.Matrices;
-
-public class InvertedMatrix : SquareMatrix
+﻿namespace Matrices.Matrices
 {
-    public InvertedMatrix(double[,] data) : base(data)
+    internal class InvertedMatrix : SquaredMatrix
     {
-        if (Math.Abs(Determinant) < 0.001)
+     
+        public SquaredMatrix Invert
         {
-            throw new ValidationException("Determinant = 0, cannot create invert matrix");
+            get { return GetInvertMatrix(); }
         }
-        
-        CreateInvertedMatrix();
-    }
-    
-    public InvertedMatrix(Matrix m) : this(m.MatrixData) {}
-
-    private void CreateInvertedMatrix()
-    {
-        if (_rowCount == 1)
+        public InvertedMatrix() { }
+        public InvertedMatrix(double[,] matr) : base(matr)
         {
-            _matrix[0, 0] = 1 / _matrix[0, 0];
-            return;
+            if (Det == 0) throw new Exception("Матрица вырожденная");
         }
-        
-        ProcessFunctionOverMatrix(this, (i, j) =>
-        {
-            _matrix[i, j] = ((i + j) % 2 == 0 ? 1 : -1) * CreateMinor(i, j).Determinant;
-            _matrix[i, j] /= Determinant;
-        });
+        public InvertedMatrix(Matrix matr) : base(matr) {
+            if (Det == 0) throw new Exception("Матрица вырожденная");
+        }
+        public InvertedMatrix(SquaredMatrix matr) : base(matr) {
+            if (Det == 0) throw new Exception("Матрица вырожденная");
+        }
 
-        var tmp = _matrix.Clone() as double[,];
-        
-        ProcessFunctionOverMatrix(this, (i, j) =>
+        public InvertedMatrix(InvertedMatrix other)
         {
-            _matrix[i, j] = tmp![j, i];
-        });
+            var size = other.GetSize();
+            Matr = new double[size[0], size[1]];
+            Matr = (double[,])other.Matr.Clone();
+        }
+
+        private SquaredMatrix GetInvertMatrix()
+        {
+            var result = new SquaredMatrix(this);
+            result.ProcessFunctionOverMatrix((i, j) =>
+                result[i, j] = ((i + j) % 2 == 1 ? -1 : 1) * 
+                               CreateMinor(i, j).Calculate());
+            result /= Det;
+            result = ~result;
+
+            return result;
+        }
     }
 }
